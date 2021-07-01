@@ -1,11 +1,13 @@
 const express = require('express');
 const { body } = require('express-validator');
+const multer = require('multer');
+
 const User = require('../models/user');
 
 const router = express.Router();
 
 const userController = require('../controllers/user');
-const { isAuth } = require('../middleware/utils');
+const { isAuth, fileFilter } = require('../middleware/utils');
 
 router.post(
 	'/login',
@@ -55,5 +57,34 @@ router.post(
 
 	userController.postSignup
 );
+
+router.get('/tasks', isAuth, userController.getTasks);
+
+router.get('/task/:num', isAuth, userController.getTask);
+
+router.post(
+	'/task/:num/upload',
+	isAuth,
+	multer({
+		storage: multer.diskStorage({
+			destination: (req, file, cb) => {
+				cb(null, `homework/${req.userId}`);
+			},
+			filename: (req, file, cb) => {
+				const url_title = req.params.num;
+				cb(
+					null,
+					`Task_${req.userId}_${url_title}.${
+						file.mimetype.split('/')[1]
+					}`
+				);
+			},
+		}),
+		fileFilter: fileFilter,
+	}).single('taskImage'),
+	userController.updateTask
+);
+
+router.get('/tasks/graded', isAuth, userController.getGradedTasks);
 
 module.exports = router;

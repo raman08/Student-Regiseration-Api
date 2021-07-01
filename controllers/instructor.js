@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 
 const Instructor = require('../models/instructor');
+const Tasks = require('../models/tasks');
+const User = require('../models/user');
 
 exports.postSignup = async (req, res, next) => {
 	const { name, email, password, cpassword, bootcamp } = req.body;
@@ -77,5 +79,119 @@ exports.postLogin = async (req, res, next) => {
 		});
 	} catch (err) {
 		console.log(err);
+	}
+};
+
+exports.postCreateTask = async (req, res, next) => {
+	const { title, bootcamp } = req.body;
+	const taskImage = req.file;
+
+	try {
+		const task = new Tasks({
+			title: title,
+			createdBy: req.userId,
+			image: `/${taskImage.path}`,
+			bootcamp: bootcamp,
+		});
+
+		await task.save();
+
+		const instructor = await Instructor.findById(req.userId);
+		instructor.tasks.push(task._id);
+		await instructor.save();
+
+		const users = await User.find({ bootcamp: bootcamp });
+
+		if (users.length > 0) {
+			users.forEach(async user => {
+				console.log(user);
+				const taskLength = user.tasks.length + 1;
+				user.tasks.push({
+					_id: task._id,
+					index: taskLength,
+					title: task.title,
+					image: task.image,
+					done: false,
+				});
+				await user.save();
+			});
+		}
+
+		res.json({
+			message: 'Task created sucessfully!',
+			task: {
+				task: task.title,
+				image: task.image,
+			},
+		});
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ message: 'Something went wrong' });
+	}
+};
+
+exports.getUserTasks = async (req, res, next) => {
+	const userId = req.params.userId;
+
+	try {
+		const user = await User.findById(userId);
+
+		if (!user) {
+			return res.status(404).json('Invalid userId');
+		}
+
+		res.json({ name: user.name, tasks: user.tasks });
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ message: 'Something went wrong' });
+	}
+};
+
+exports.getUserTask = async (req, res, next) => {
+	const userId = req.params.userId;
+	const taskIndex = req.params.taskId;
+
+	try {
+		const user = await User.findById(userId);
+
+		if (!user) {
+			return res.status(404).json('Invalid userId');
+		}
+
+		const task = user.tasks.filter(task => task.index == taskIndex);
+
+		res.json({ name: user.name, task: task });
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ message: 'Something went wrong' });
+	}
+};
+
+exports.postRateTask = async (req, res, next) => {
+	const userId = req.params.userId;
+	const taskIndex = req.params.taskId;
+	const grade = req.body.grade;
+
+	try {
+		const user = await User.findById(userId);
+
+		if (!user) {
+			return res.status(404).json('Invalid userId');
+		}
+
+		const task = user.tasks.filter(task => task.index == taskIndex)[0];
+
+		console.log(task);
+		task.checked = true;
+		task.grade = grade;
+		console.log(task);
+
+		user.markModified('tasks');
+		await user.save();
+
+		res.json({ message: 'Task Graded', task: task, tasks: user.tasks });
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ message: 'Something went wrong' });
 	}
 };

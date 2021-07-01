@@ -17,6 +17,10 @@ const instructorSchema = new mongoose.Schema({
 		type: [mongoose.Schema.Types.ObjectId],
 		ref: 'users',
 	},
+	tasks: {
+		type: [mongoose.Schema.Types.ObjectId],
+		ref: 'tasks',
+	},
 });
 
 module.exports = mongoose.model('Instructor', instructorSchema);

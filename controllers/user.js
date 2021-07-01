@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 
 const User = require('../models/user');
+const tasks = require('../models/tasks');
 
 exports.postSignup = async (req, res, next) => {
 	const { name, email, password, cpassword, bootcamp } = req.body;
@@ -78,4 +79,80 @@ exports.postLogin = async (req, res, next) => {
 	} catch (err) {
 		console.log(err);
 	}
+};
+
+exports.getTasks = async (req, res, next) => {
+	try {
+		const user = await User.findById(req.userId);
+
+		const tasks = user.tasks;
+
+		res.status(200).json(tasks);
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ message: 'Something Wend Wrong' });
+	}
+};
+
+exports.getTask = async (req, res, next) => {
+	const num = req.params.num;
+	console.log(num);
+
+	if (num <= 0) {
+		return res.status(404).status('Invalid Task');
+	}
+
+	try {
+		const user = await User.findById(req.userId);
+
+		const tasks = user.tasks;
+
+		if (num > tasks.length) {
+			return res
+				.status(404)
+				.json({ message: "You don't have this many task" });
+		}
+		res.status(200).json(tasks.filter(task => task.index == num));
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ message: 'Something Wend Wrong' });
+	}
+};
+
+exports.updateTask = async (req, res, next) => {
+	const num = req.params.num;
+	const taskImage = req.file;
+
+	if (num <= 0) {
+		res.status(404).status('Invalid Task');
+	}
+
+	if (!taskImage) {
+		res.status(404).json({ message: 'No image found.' });
+	}
+
+	const user = await User.findById(req.userId);
+
+	if (num >= user.tasks.length) {
+		res.status(404).json({ message: "You don't have this many task" });
+	}
+
+	let task = user.tasks[num];
+
+	task.editedImage = `/${taskImage.path}`;
+	task.done = true;
+
+	user.markModified('tasks');
+
+	await user.save();
+
+	res.json({ message: 'Task updated', task: task, user: user });
+};
+
+exports.getGradedTasks = async (req, res, next) => {
+	const user = await User.findById(req.userId);
+
+	const gradedTasks = user.tasks.filter(task => task.checked);
+
+	res.json(gradedTasks);
 };

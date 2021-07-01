@@ -17,10 +17,6 @@ const userSchema = new mongoose.Schema({
 		type: String,
 		required: true,
 	},
-	instructor: {
-		type: mongoose.Schema.Types.ObjectId,
-		ref: 'instructor',
-	},
 	tasks: {
 		type: [],
 	},

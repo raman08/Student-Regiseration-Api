@@ -1,11 +1,13 @@
 const express = require('express');
 const { body } = require('express-validator');
-const Instructor = require('../models/instructor');
+const multer = require('multer');
 
 const router = express.Router();
 
+const Instructor = require('../models/instructor');
 const instructorController = require('../controllers/instructor');
-const { isAuth } = require('../middleware/utils');
+
+const { isAuth, fileFilter, fileStorage } = require('../middleware/utils');
 
 router.post(
 	'/login',
@@ -36,6 +38,25 @@ router.post(
 	}),
 
 	instructorController.postSignup
+);
+
+router.post(
+	'/task/new',
+	isAuth,
+	multer({ storage: fileStorage, fileFilter: fileFilter }).single(
+		'taskImage'
+	),
+	instructorController.postCreateTask
+);
+
+router.get('/tasks/:userId/', isAuth, instructorController.getUserTasks);
+
+router.get('/tasks/:userId/:taskId', isAuth, instructorController.getUserTask);
+
+router.post(
+	'/tasks/:userId/:taskId/rate',
+	isAuth,
+	instructorController.postRateTask
 );
 
 module.exports = router;
