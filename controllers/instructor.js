@@ -17,7 +17,10 @@ exports.postSignup = async (req, res, next) => {
 	});
 
 	if (!errors.isEmpty()) {
-		return res.status(400).json({ errors: validateErrors });
+		return res.status(400).json({
+			message: 'Error in the input fields',
+			errors: validateErrors,
+		});
 	}
 
 	try {
@@ -31,7 +34,10 @@ exports.postSignup = async (req, res, next) => {
 		});
 		await user.save();
 
-		return res.status(201).json({ user: user });
+		return res.status(201).json({
+			message: 'Instructor Created Sucessfully',
+			user: { _id: user._id, name: user.name, email: user.email },
+		});
 	} catch (err) {
 		console.log(err);
 		return res.status(500).json({ message: 'Something Went Wrong' });
@@ -40,7 +46,6 @@ exports.postSignup = async (req, res, next) => {
 
 exports.postLogin = async (req, res, next) => {
 	const { email, password } = req.body;
-	console.log(email, password);
 	const errors = validationResult(req);
 
 	const validateErrors = errors.array().map(error => {
@@ -189,7 +194,7 @@ exports.postRateTask = async (req, res, next) => {
 		user.markModified('tasks');
 		await user.save();
 
-		res.json({ message: 'Task Graded', task: task, tasks: user.tasks });
+		res.json({ message: 'Task Graded', task: task });
 	} catch (err) {
 		console.log(err);
 		res.status(500).json({ message: 'Something went wrong' });

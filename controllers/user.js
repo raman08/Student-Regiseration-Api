@@ -30,7 +30,14 @@ exports.postSignup = async (req, res, next) => {
 		});
 		await user.save();
 
-		return res.status(201).json({ user: user });
+		return res.status(201).json({
+			user: {
+				_id: user._id,
+				name: user.name,
+				email: user.email,
+				bootcamp: user.bootcamp,
+			},
+		});
 	} catch (err) {
 		console.log(err);
 		return res.status(500).json({ message: 'Something Went Wrong' });
@@ -39,15 +46,21 @@ exports.postSignup = async (req, res, next) => {
 
 exports.postLogin = async (req, res, next) => {
 	const { email, password } = req.body;
-	console.log(email, password);
+
 	const errors = validationResult(req);
 
 	const validateErrors = errors.array().map(error => {
-		return { value: error.value, msg: error.msg };
+		return {
+			value: error.value,
+			msg: error.msg,
+		};
 	});
 
 	if (!errors.isEmpty()) {
-		return res.status(400).json({ errors: validateErrors });
+		return res.status(400).json({
+			message: 'The enter value id not correct',
+			errors: validateErrors,
+		});
 	}
 
 	try {
@@ -146,7 +159,7 @@ exports.updateTask = async (req, res, next) => {
 
 	await user.save();
 
-	res.json({ message: 'Task updated', task: task, user: user });
+	res.json({ message: 'Task updated', task: task });
 };
 
 exports.getGradedTasks = async (req, res, next) => {
